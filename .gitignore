@@ -1,0 +1,33 @@
+# Arduino IDE
+.ino.cpp
+.ino.cpp.o
+.ino.elf
+.ino.with_bootloader.bin
+.ino.with_bootloader.elf
+*.o
+*.a
+*.so
+*.dylib
+
+# Build directories
+build/
+dist/
+
+# Dependencies
+libraries/
+
+# IDE
+.vscode/
+*.code-workspace
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+secrets.h
+config_local.h
