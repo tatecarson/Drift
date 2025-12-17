@@ -11,45 +11,7 @@ const int PAN_MAX = 180;
 const int TILT_MIN = 0;   // Prevent tilting too far down
 const int TILT_MAX = 180;  // Prevent tilting too far up
 
-// --------------------------
-// TILT MAPPING: servo mounted on its side
-// --------------------------
-// If the tilt servo's mechanical orientation inverts left/right, set to true.
-const bool TILT_INVERT = false;
-
-// Define a logical left→right coordinate for tilt: 0 = far left, 180 = far right.
-// We will only use the RIGHT side to avoid hitting the pan servo.
-// Adjust these two values to match your hardware clearance.
-const int TILT_RIGHT_SAFE_LOGICAL_MIN = 95;   // just to the right of center
-const int TILT_RIGHT_SAFE_LOGICAL_MAX = 165;  // far right, but before interference
-
-// Named, meaningful tilt positions on the right side
-enum TiltPose { TILT_RIGHT_NEAR, TILT_RIGHT_MID, TILT_RIGHT_FAR };
-
-// Map pose → logical degrees (left→right space)
-int tiltPoseToLogical(TiltPose p) {
-  switch (p) {
-    case TILT_RIGHT_NEAR: return TILT_RIGHT_SAFE_LOGICAL_MIN;          // closest to center
-    case TILT_RIGHT_MID:  return (TILT_RIGHT_SAFE_LOGICAL_MIN + TILT_RIGHT_SAFE_LOGICAL_MAX) / 2;
-    case TILT_RIGHT_FAR:  return TILT_RIGHT_SAFE_LOGICAL_MAX;          // far right
-  }
-  return TILT_RIGHT_SAFE_LOGICAL_MIN;
-}
-
-// Convert logical left→right degrees to actual servo angle, respecting inversion
-int tiltLogicalToServoAngle(int logicalDeg) {
-  logicalDeg = constrain(logicalDeg, 0, 180);
-  return TILT_INVERT ? (180 - logicalDeg) : logicalDeg;
-}
-
-// Convenience: move between named right-side poses with easing and right-side safety
-void moveTiltPoseWithEase(TiltPose startPose, TiltPose endPose, int durationMs) {
-  int startLogical = constrain(tiltPoseToLogical(startPose), TILT_RIGHT_SAFE_LOGICAL_MIN, TILT_RIGHT_SAFE_LOGICAL_MAX);
-  int endLogical   = constrain(tiltPoseToLogical(endPose),   TILT_RIGHT_SAFE_LOGICAL_MIN, TILT_RIGHT_SAFE_LOGICAL_MAX);
-  int startServo   = tiltLogicalToServoAngle(startLogical);
-  int endServo     = tiltLogicalToServoAngle(endLogical);
-  moveServoWithEase(servoTilt, startServo, endServo, durationMs);
-}
+// Note: Tilt servo now uses direct physical degrees (0–180)
 
 // --------------------------
 // EASING PRESETS
@@ -96,7 +58,7 @@ float (*ease)(float) = logEaseIn;   // <—— change this to switch preset
 // TEST CONFIG: choose which single servo to exercise
 // --------------------------
 enum TestTarget { TEST_PAN, TEST_TILT };
-const TestTarget TEST_TARGET = TEST_PAN; // change to TEST_TILT to test tilt only
+const TestTarget TEST_TARGET = TEST_TILT; // change to TEST_TILT to test tilt only
 
 // --------------------------
 
@@ -152,20 +114,29 @@ void moveDualServosWithEase(int panStart, int panEnd, int tiltStart, int tiltEnd
 void setup() {
   servoPan.attach(9);    // Pan servo on pin 9
   servoTilt.attach(10);  // Tilt servo on pin 10
+  Serial.begin(115200);
+  delay(50);
 }
 
 void loop() {
-  if (TEST_TARGET == TEST_PAN) {
-    // Test pan only
-    movePanWithEase(30, 150, 1200);
+  // if (TEST_TARGET == TEST_PAN) {
+  //   // Test pan only
+  //   movePanWithEase(30, 150, 1200);
+  //   delay(500);
+  //   movePanWithEase(150, 30, 1200);
+  //   delay(800);
+  // } else {
+  //   // Test tilt only
+  //   Serial.println("Tilt: moving towards higher degrees");
+  //   moveTiltWithEase(0, 90, 1200);
+  //   delay(500);
+  // //   Serial.println("Tilt: moving towards lower degrees");
+  //   moveTiltWithEase(90, 0, 1200);
+  //   delay(800);
+    Serial.println("Moving pan and tilt together");
+    moveDualServosWithEase(30, 150, 0, 90, 1200);
     delay(500);
-    movePanWithEase(150, 30, 1200);
-    delay(800);
-  } else {
-    // Test tilt only
-    moveTiltPoseWithEase(TILT_RIGHT_NEAR, TILT_RIGHT_FAR, 1200);
-    delay(500);
-    moveTiltPoseWithEase(TILT_RIGHT_FAR, TILT_RIGHT_NEAR, 1200);
+    moveDualServosWithEase(150, 30, 90, 0, 1200);
     delay(800);
   }
-}
+
